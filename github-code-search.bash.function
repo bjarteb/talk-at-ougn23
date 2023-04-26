@@ -1,0 +1,6 @@
+ghc () 
+{ 
+    args=("$@");
+    SEARCH_STRING_PLUSSIGN=$(printf '%s' "${args[@]/%/+}");
+    open "$(echo "https://github.com/search?q=${SEARCH_STRING_PLUSSIGN%?}&type=code")"
+}

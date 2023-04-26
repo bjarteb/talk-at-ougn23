@@ -1,0 +1,5 @@
+howto () 
+{ 
+    NAME=$1;
+    cat ~/projects/linux/howto/"${NAME//.howto}".howto
+}

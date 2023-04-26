@@ -1,0 +1,60 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: play
+  labels:
+    app: play
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: play
+  template:
+    metadata:
+      labels:
+        app: play
+    spec:
+      containers:
+        - image: alexwhen/docker-2048 # Will not work on ARM architecture
+          name: play
+          ports:
+            - name: web
+              containerPort: 80
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: play
+spec:
+  selector:
+    app: play
+  ports:
+    - port: 80
+      targetPort: web
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: play
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    cert-manager.io/cluster-issuer: letsencrypt-staging
+spec:
+  rules:
+  - host: play.rippel.no
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: play
+            port:
+              number: 80
+  tls:
+    - hosts:
+      - play.rippel.no
+      secretName: play-staging-certificate

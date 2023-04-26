@@ -1,0 +1,195 @@
+
+################################################################################
+# OCI - ORACLE CLOUD INFRASTRUTURE
+################################################################################
+
+function oci-network-vcn-list () {
+  oci network vcn list \
+    --compartment-id $C \
+    --query 'data [*].{Display:"display-name",CIDR:"cidr-block", id:id}' \
+    --output table
+}
+
+alias oci-ls-vcn=oci-network-vcn-list
+alias oci-ls-v=oci-network-vcn-list
+
+function oci-iam-compartment-list () {
+  oci iam compartment list \
+    --all \
+    --output table \
+    --compartment-id-in-subtree true \
+    --query "data [?\"lifecycle-state\" =='ACTIVE'].{Name:name,id:id}"
+}
+
+alias oci-ls-compartment=oci-iam-compartment-list
+alias oci-ls-c=oci-iam-compartment-list
+
+function oci-availability-domain-list {
+  oci iam availability-domain list \
+    --compartment-id $C \
+    --query "data[*].{name:\"name\"}" \
+    --output table
+}
+
+alias oci-ls-ad=oci-availability-domain-list
+
+function oci-network-subnet-list () {
+  oci network subnet list \
+    --compartment-id $C \
+    --vcn-id "${VCN_ID}" \
+    --query "data[*].{name:\"display-name\",CIDR:\"cidr-block\",id:id}" \
+    --output table
+
+}
+
+alias oci-ls-s=oci-network-subnet-list
+alias oci-ls-subnet=oci-network-subnet-list
+
+function oci-network-internet-gateway-list () {
+  oci network internet-gateway list \
+    --compartment-id $C \
+    --vcn-id "${VCN_ID}" \
+    --query "data[*].{IGW_ID:\"id\"}" \
+    --output table
+}
+
+alias oci-ls-igw=oci-network-internet-gateway-list
+alias oci-ls-internet-gateway=oci-network-internet-gateway-list
+
+function oci-api-gateway-list () {
+  oci api-gateway gateway list \
+    --compartment-id $C \
+    --all
+}
+
+alias oci-ls-api-gw=oci-api-gateway-list
+alias oci-ls-apigw=oci-api-gateway-list
+
+
+function oci-compute-image-list () {
+  oci compute image list \
+    --all \
+    --compartment-id $C  \
+    --query 'data [*].{OS: "operating-system", Version:"operating-system-version"}' \
+    --output table \
+    | awk '
+      BEGIN   { uniq = "sort -u" }
+      NR == 1 { hdr = $0 }
+      NR < 4  { print; next }
+      /^\|/   { print | uniq }
+      END     { close(uniq); print hdr}
+    '
+}
+
+alias oci-ls-image=oci-compute-image-list
+alias oci-ls-images=oci-compute-image-list
+alias oci-ls-im=oci-compute-image-list
+
+# product image catalog
+function oci-compute-pic-listing-list () {
+  oci compute pic listing list \
+    --all \
+    --query 'data[?contains("display-name", `'"${image_name}"'`)].join('"'"' '"'"', ["listing-id", "display-name"]) | join(`\n`, @)' \
+    --raw-output
+}
+
+alias  oci-ls-product-image-catalog=oci-compute-pic-listing-list
+alias  oci-ls-pic=oci-compute-pic-listing-list
+alias  oci-ls-marketplace=oci-compute-pic-listing-list
+
+function oci-compute-instance-list () {
+  oci compute instance list \
+    --compartment-id $C \
+    --query "data[*].{name:\"display-name\",state:\"lifecycle-state\",FD:\"fault-domain\",shape:shape,region:region,id:id}" \
+    --output table
+}
+
+alias oci-ls-i=oci-compute-instance-list
+alias oci-ls-instance=oci-compute-instance-list
+
+function oci-network-route-table-list () {
+  oci network route-table list -c $C \
+    --vcn-id $VCN_ID \
+    --query "data[0].{Route:\"display-name\",dest:\"route-rules\"[0].destination,CIDR:\"route-rules\"[0].\"cidr-block\",RT_ID:id}" \
+    --output table
+}
+
+alias oci-ls-rt=oci-network-route-table-list
+alias oci-ls-routetable=oci-network-route-table-list
+
+function oci-compute-instance-vnics-list () {
+  oci compute instance list-vnics \
+    --compartment-id $C \
+    --query "data[0].{name:\"display-name\",public:\"public-ip\",private:\"private-ip\"}" \
+    --output table
+}
+
+alias oci-ls-vnics=oci-compute-instance-vnics-list
+alias oci-ls-iv=oci-compute-instance-vnics-list
+
+function oci-network-security-list () {
+  oci network security-list list \
+    --compartment-id $C \
+    --vcn-id $VCN_ID \
+    --query 'data[].{name:"display-name",id:id}' \
+    --output table
+}
+
+alias oci-ls-sl=oci-network-security-list
+alias oci-ls-security-list=oci-network-security-list
+
+function oci-network-security-list-ingress () {
+  oci network security-list list \
+    --compartment-id $C \
+    --vcn-id $VCN_ID \
+    --query 'data[]."ingress-security-rules"[].{desc:description,protocol:protocol,source:source,type:"source-type","tcp-options":"tcp-options"}' \
+    --output table
+}
+
+alias oci-ls-ingress-rules=oci-network-security-list-ingress
+alias oci-ls-security-ingress=oci-network-security-list-ingress
+alias oci-ls-security-i=oci-network-security-list-ingress
+
+function oci-os-bucket-list () {
+  oci os bucket list \
+    --namespace-name $NS \
+    --compartment-id $C \
+    --query 'data[].{name:name,namespace:namespace}' \
+    --output table
+}
+
+alias oci-ls-bucket=oci-os-bucket-list
+alias oci-ls-buckets=oci-os-bucket-list
+alias oci-ls-object-storage=oci-os-bucket-list
+
+function oci-artifacts-container-repository-list () {
+  oci artifacts container repository list \
+    --compartment-id $C
+}
+
+alias oci-ls-acr=oci-artifacts-container-repository-list
+alias oci-ls-cr=oci-artifacts-container-repository-list
+alias oci-ls-container-repository=oci-artifacts-container-repository-list
+
+function oci-dns-zone-list () {
+  oci dns zone list \
+    --compartment-id $C \
+    --query "data[*].{id:\"id\",name:\"name\"}" \
+    --output table
+}
+
+alias oci-ls-dns-zone=oci-dns-zone-list
+alias oci-ls-zone=oci-dns-zone-list
+alias oci-ls-zones=oci-dns-zone-list
+
+function oci-dns-zone-get-content () {
+  oci dns zone get-zone-content \
+    --zone-name-or-id "${ZONENAME}" \
+    --raw-output \
+    --file - \
+    | awk '{ printf "%-20s %-10s %-15s %-10s %-20s\n", $1,$2,$3,$4,$5 }' \
+    | sort -k1
+}
+
+alias oci-ls-dns-zone-content=oci-dns-zone-get-content
+alias oci-ls-dns-zone-entries=oci-dns-zone-get-content

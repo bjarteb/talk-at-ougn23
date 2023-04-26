@@ -1,0 +1,21 @@
+#cloud-config
+runcmd:
+  - sudo dnf install -y nc
+  - sudo dnf install -y tmux
+  - sudo dnf install -y git
+  - sudo setenforce 0
+  - sudo sed -i "s/^SELINUX=enforcing$/SELINUX=permissive/" /etc/selinux/config
+    # Note that nftables is not currently a supported firewall backend for k8s/k3s
+  - sudo sed -i "s/FirewallBackend=.*/FirewallBackend=iptables/g" /etc/firewalld/firewalld.conf
+  - sudo /bin/firewall-offline-cmd --add-port=80/tcp
+  - sudo /bin/firewall-offline-cmd --add-port=443/tcp
+  - sudo /bin/firewall-offline-cmd --add-port=10250/tcp
+  - sudo /bin/systemctl restart firewalld
+  - 'curl -sfL "https://get.k3s.io" | K3S_NODE_NAME=${NODE_NAME} sh -s - server --disable traefik --write-kubeconfig-mode "0644"'
+  - echo "alias k=kubectl" >> /home/opc/.bashrc
+  - sleep 5
+  - 'curl -s https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.7.0/deploy/static/provider/baremetal/deploy.yaml --output /home/opc/deploy-ingress-nginx.yaml'
+  - sleep 2; /usr/local/bin/kubectl apply -f /home/opc/deploy-ingress-nginx.yaml
+  - sleep 1
+  - "/usr/local/bin/kubectl patch -n ingress-nginx deployment/ingress-nginx-controller -p '{\"spec\": { \"template\": { \"spec\": { \"hostNetwork\": true }}}}'"
+  - sleep 2; /usr/local/bin/kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=120s
